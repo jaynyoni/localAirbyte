@@ -7,6 +7,10 @@ from setuptools import find_packages, setup
 
 MAIN_REQUIREMENTS = [
     "airbyte-cdk",
+    "hdfs",
+    "requests",
+"trino",
+    "pysocks"
 ]
 
 TEST_REQUIREMENTS = [

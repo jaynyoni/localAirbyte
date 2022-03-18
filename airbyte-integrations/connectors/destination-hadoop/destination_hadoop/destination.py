@@ -8,6 +8,37 @@ from typing import Mapping, Any, Iterable
 from airbyte_cdk import AirbyteLogger
 from airbyte_cdk.destinations import Destination
 from airbyte_cdk.models import AirbyteConnectionStatus, ConfiguredAirbyteCatalog, AirbyteMessage, Status
+import requests
+import trino
+
+
+
+def create_connection(config: Mapping[str, Any]):
+    host = config.get("host")
+    port = config.get("port")
+    schema = config.get("schema")
+    database = config.get("database")
+    username = config.get("username")
+    password = config.get("password")
+
+    session = requests.session()
+    socks_host = "127.0.0.1"
+    socks_port = "8080"
+    socks_uri = f"socks5h://{socks_host}:{socks_port}"
+    session.proxies.update({"http": socks_uri, "https": socks_uri})
+
+    conn = trino.dbapi.connect(
+        host=host,
+        port=port,
+        user=username,
+        catalog=database,
+        schema=schema,
+        http_scheme='https',
+        auth=trino.auth.BasicAuthentication(username, password),
+        http_session=session,
+    )
+    cur = conn.cursor()
+    return cur
 
 
 class DestinationHadoop(Destination):
@@ -49,8 +80,8 @@ class DestinationHadoop(Destination):
         :return: AirbyteConnectionStatus indicating a Success or Failure
         """
         try:
-            # TODO
-
+            cur = create_connection(config=config)
+            cur.execute("select current_user ")
             return AirbyteConnectionStatus(status=Status.SUCCEEDED)
         except Exception as e:
             return AirbyteConnectionStatus(status=Status.FAILED, message=f"An exception occurred: {repr(e)}")
